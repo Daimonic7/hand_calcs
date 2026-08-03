@@ -13,7 +13,7 @@ import handcalcs
 import handcalcs.handcalcs as _hc
 
 from .sigfigs import to_sigfig, sig            # noqa: F401 (sig re-exported)
-from .units import customary, customary_ft      # noqa: F401 (customary_ft re-exported)
+from .units import customary
 from .units import *                            # unit names + math helpers, re-exported
 from . import units as _units
 from .exporter import export_notebook           # noqa: F401 (re-exported)
@@ -26,15 +26,13 @@ except Exception:
 
 _orig_latex_repr = _hc.latex_repr
 _CURRENT_SIG_FIGS = 3
-_CONVERTERS = {"kip-inch": customary, "kip-ft": customary_ft}
-_CURRENT_CONVERTER = customary  # set by setup_formatting
 
 
 def _latex_repr(item, use_scientific_notation, precision, preferred_formatter):
     n = precision if precision else _CURRENT_SIG_FIGS
-    # forallpeople Physical -> kip-inch / kip-ft magnitude at n sig figs
+    # forallpeople Physical -> kip-inch magnitude at n sig figs
     if hasattr(item, "dimensions") and hasattr(item, "value"):
-        conv = _CURRENT_CONVERTER(item)
+        conv = customary(item)
         if conv is not None:
             num = to_sigfig(conv[0], n, latex=True)
             if num is not None:
@@ -49,23 +47,15 @@ def _latex_repr(item, use_scientific_notation, precision, preferred_formatter):
     return _orig_latex_repr(item, use_scientific_notation, precision, preferred_formatter)
 
 
-def setup_formatting(sig_figs=3, system="kip-inch"):
-    """Install the sig-fig renderer and set handcalcs options.
-
-    system : "kip-inch" (default; lengths in in, moments in kip-in) or
-             "kip-ft" (lengths in ft, moments in kip-ft).
-    """
-    global _CURRENT_SIG_FIGS, _CURRENT_CONVERTER
-    if system not in _CONVERTERS:
-        raise ValueError(f"system must be one of {sorted(_CONVERTERS)}")
+def setup_formatting(sig_figs=3):
+    """Install the sig-fig + kip-inch renderer and set handcalcs options."""
+    global _CURRENT_SIG_FIGS
     _CURRENT_SIG_FIGS = sig_figs
-    _CURRENT_CONVERTER = _CONVERTERS[system]
     _hc.latex_repr = _latex_repr
     handcalcs.set_option("display_precision", sig_figs)
     handcalcs.set_option("param_columns", 2)
 
 
 __all__ = list(_units.__all__) + [
-    "setup_formatting", "sig", "export_notebook", "to_sigfig",
-    "customary", "customary_ft",
+    "setup_formatting", "sig", "export_notebook", "to_sigfig", "customary",
 ]
